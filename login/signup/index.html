@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>
+    input, button {
+        display: block;
+        margin: 8px 0;
+        padding: 8px;
+        width: 100%;
+        max-width: 400px;
+        box-sizing: border-box;
+    }
+</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - StudyScoops</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   
+</head>
+<body>
+
+    <h2>Sign Up</h2>
+    <input type="text" id="signup-username" placeholder="Username">
+    <input type="email" id="signup-email" placeholder="Email">
+    <input type="password" id="signup-password" placeholder="Password">
+    <input type="password" id="signup-password-confirm" placeholder="Confirm password">
+    <input type="text" id="signup-phone" placeholder="Phone number">
+    <input type="text" id="signup-first" placeholder="First name">
+    <input type="text" id="signup-last" placeholder="Last name">
+    <button onclick="signUp()">Sign Up</button>
+    <p>Already have an account? <a href="login.html">Log in</a></p>
+    <p id="message"></p>
+    <p id="error" style="color:red;"></p>
+
+    <script>
+        const SUPABASE_URL = 'https://hkizcacrvtnsclmfdbeg.supabase.co/rest/v1/';
+        const SUPABASE_ANON_KEY = 'sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function signUp() {
+            document.getElementById('message').textContent = '';
+            document.getElementById('error').textContent = '';
+
+            const username = document.getElementById('signup-username').value;
+            const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const passwordConfirm = document.getElementById('signup-password-confirm').value;
+
+            if (password !== passwordConfirm) {
+                document.getElementById('error').textContent = 'Passwords do not match.';
+                return;
+            }
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        username: username,
+                        phone_number: phone,
+                        first_name: firstName,
+                        last_name: lastName
+                    }
+                }
+            });
+
+            if (error) {
+                document.getElementById('error').textContent = error.message;
+                return;
+            }
+
+            document.getElementById('message').textContent = 'Signed up successfully!';
+        }
+    </script>
+
+</body>
+</html>
