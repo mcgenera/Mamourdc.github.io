@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In - StudyScoops</title>
+    <style>
+        input, button {
+            display: block;
+            margin: 8px 0;
+            padding: 8px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <h2>Log In</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="logIn()">Log In</button>
+    <p>Need an account? <a href="signup.html">Sign up</a></p>
+    <p id="message"></p>
+    <p id="error" style="color:red;"></p>
+
+    <script>
+        const SUPABASE_URL = 'https://hkizcacrvtnsclmfdbeg.supabase.co/rest/v1/';
+        const SUPABASE_ANON_KEY = 'sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        async function logIn() {
+            document.getElementById('message').textContent = '';
+            document.getElementById('error').textContent = '';
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) {
+                document.getElementById('error').textContent = error.message;
+                return;
+            }
+
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+
+</body>
+</html>
