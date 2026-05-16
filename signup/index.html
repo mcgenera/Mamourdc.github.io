@@ -20,13 +20,9 @@
 <body>
 
     <h2>Sign Up</h2>
-    <input type="text" id="signup-username" placeholder="Username">
     <input type="email" id="signup-email" placeholder="Email">
     <input type="password" id="signup-password" placeholder="Password">
     <input type="password" id="signup-password-confirm" placeholder="Confirm password">
-    <input type="text" id="signup-phone" placeholder="Phone number">
-    <input type="text" id="signup-first" placeholder="First name">
-    <input type="text" id="signup-last" placeholder="Last name">
     <button onclick="signUp()">Sign Up</button>
     <p>Already have an account? <a href="/login">Log in</a></p>
     <p id="message"></p>
@@ -41,7 +37,6 @@
             document.getElementById('message').textContent = '';
             document.getElementById('error').textContent = '';
 
-            const username = document.getElementById('signup-username').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
             const passwordConfirm = document.getElementById('signup-password-confirm').value;
@@ -55,12 +50,7 @@
                 email,
                 password,
                 options: {
-                    data: {
-                        username: username,
-                        phone_number: phone,
-                        first_name: firstName,
-                        last_name: lastName
-                    }
+                    data: {}
                 }
             });
 
