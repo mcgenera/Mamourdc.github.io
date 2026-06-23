@@ -159,7 +159,6 @@ const FIELDS = [
   // group, name, label, type, hint
   ["identity","study_number","Study number","text",""],
   ["identity","study_name","Study name","text",""],
-  ["identity","link","Link","text","Leave blank until the study is live online"],
   ["eligibility","sex","Sex","select",""],
   ["eligibility","min_age","Min age","int",""],
   ["eligibility","max_age","Max age","int","Blank = open-ended"],
@@ -171,7 +170,7 @@ const FIELDS = [
   ["logistics","dates","Dates","text","Free-text range, e.g. Jun 28 2026 – Aug 30 2026"],
   ["logistics","commitment","Commitment / details","textarea",""],
 ];
-const FULL_WIDTH = new Set(["study_name","link","dates","commitment"]);
+const FULL_WIDTH = new Set(["study_name","dates","commitment"]);
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const $ = id => document.getElementById(id);
