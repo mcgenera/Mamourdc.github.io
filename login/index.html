@@ -27,9 +27,9 @@
     <p id="error" style="color:red;"></p>
 
     <script>
-        const SUPABASE_URL = 'https://hkizcacrvtnsclmfdbeg.supabase.co/rest/v1/';
+        const SUPABASE_URL = 'https://hkizcacrvtnsclmfdbeg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        cconst sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function logIn() {
             document.getElementById('message').textContent = '';
@@ -38,7 +38,7 @@
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await sb.auth.signInWithPassword({
                 email,
                 password
             });
