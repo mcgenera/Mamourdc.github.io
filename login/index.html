@@ -29,7 +29,7 @@
     <script>
         const SUPABASE_URL = 'https://hkizcacrvtnsclmfdbeg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr';
-        cconst sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function logIn() {
             document.getElementById('message').textContent = '';
