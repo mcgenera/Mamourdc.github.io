@@ -1,1 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Study Scoops — Submit a study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  /* ---- tokens ------------------------------------------------------------ */
+  :root{
+    --bg:#F4F4F0; --card:#FFFFFF; --ink:#15191F; --muted:#6A7180;
+    --line:#E3E3DB; --line-strong:#CFCFC4;
+    --accent:#15616D; --accent-ink:#0B3A42; --accent-soft:#E2EEEF;
+    --req:#B45309; --err:#B42318; --ok:#15803D;
+    --radius:10px; --pad:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Inter",system-ui,sans-serif; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    padding:32px 18px 80px;
+  }
+  .wrap{max-width:680px;margin:0 auto}
+
+  /* ---- header ------------------------------------------------------------ */
+  header.masthead{display:flex;align-items:baseline;gap:12px;margin-bottom:6px}
+  .wordmark{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em}
+  .wordmark .dot{color:var(--accent)}
+  .tag{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .lede{color:var(--muted);font-size:14px;margin:0 0 24px}
+
+  /* ---- card -------------------------------------------------------------- */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:var(--pad)}
+  .card + .card{margin-top:16px}
+
+  /* ---- clinic picker + match key ---------------------------------------- */
+  .picker label{display:block;font-weight:600;font-size:13px;margin-bottom:6px}
+  select,input,textarea{
+    width:100%;font:inherit;color:var(--ink);background:#fff;
+    border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;
+  }
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  .clinic-meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)}
+  .clinic-meta b{color:var(--ink);font-weight:600}
+  .keyline{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .keyline .h{font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-family:"Space Mono",monospace;font-size:12px;background:var(--accent-soft);color:var(--accent-ink);
+        border:1px solid #cfe2e3;border-radius:6px;padding:3px 8px}
+  .keyline .note{font-size:12px;color:var(--muted);margin-top:8px}
+
+  /* ---- form -------------------------------------------------------------- */
+  .section-h{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:13px;text-transform:uppercase;
+             letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field.full{grid-column:1 / -1}
+  .field label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}
+  .field .req{color:var(--req);font-weight:700;margin-left:2px}
+  .field .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .field.is-required label{font-weight:600}
+  .field.error input,.field.error select,.field.error textarea{border-color:var(--err);outline-color:var(--err)}
+  .field.error .errmsg{color:var(--err);font-size:12px;margin-top:4px}
+
+  /* ---- actions ----------------------------------------------------------- */
+  .actions{display:flex;align-items:center;gap:14px;margin-top:22px}
+  button.primary{
+    font:inherit;font-weight:600;background:var(--accent);color:#fff;border:none;
+    border-radius:8px;padding:11px 20px;cursor:pointer;
+  }
+  button.primary:hover{background:var(--accent-ink)}
+  button.primary:disabled{opacity:.5;cursor:not-allowed}
+  .status{font-size:13px}
+  .status.ok{color:var(--ok)} .status.bad{color:var(--err)}
+
+  /* ---- gate (auth/role messages) ---------------------------------------- */
+  .gate{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px;text-align:left}
+  .gate h2{font-family:"Space Grotesk",sans-serif;font-size:17px;margin:0 0 8px}
+  .gate p{color:var(--muted);font-size:14px;margin:0 0 16px}
+  .gate a.btn{display:inline-block;font-weight:600;text-decoration:none;background:var(--accent);color:#fff;border-radius:8px;padding:10px 18px}
+  .hidden{display:none}
+
+  @media (max-width:560px){ .grid{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <span class="wordmark">Study Scoops<span class="dot">.</span></span>
+    <span class="tag">Contributor</span>
+  </header>
+  <p class="lede">Enter a trial before it hits the clinic site. Fields marked <span style="color:var(--req);font-weight:700">*</span> are what this clinic matches on — fill them so the study can release early.</p>
+
+  <!-- auth / role gate -->
+  <div id="gate" class="gate hidden"></div>
+
+  <!-- app -->
+  <main id="app" class="hidden">
+    <div class="card picker">
+      <label for="clinic">Clinic</label>
+      <select id="clinic"><option value="">Select a clinic…</option></select>
+      <div id="clinicMeta" class="clinic-meta hidden">
+        <span>Company: <b id="mCompany">—</b></span>
+        <span>Site: <b id="mSite">—</b></span>
+      </div>
+      <div id="keyLine" class="keyline hidden">
+        <div class="h">Match key — how this study is recognized online</div>
+        <div id="keyChips" class="chips"></div>
+        <div class="note">If any of these is blank, the entry can't match the live listing and will release to the free group after the full hour instead of early.</div>
+      </div>
+    </div>
+
+    <form id="form" class="hidden" novalidate>
+      <div class="card">
+        <p class="section-h">Identity</p>
+        <div class="grid" id="grp-identity"></div>
+      </div>
+      <div class="card">
+        <p class="section-h">Eligibility</p>
+        <div class="grid" id="grp-eligibility"></div>
+      </div>
+      <div class="card">
+        <p class="section-h">Compensation</p>
+        <div class="grid" id="grp-compensation"></div>
+      </div>
+      <div class="card">
+        <p class="section-h">Logistics</p>
+        <div class="grid" id="grp-logistics"></div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="saveBtn">Save submission</button>
+        <span id="status" class="status"></span>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script>
+// ============================================================================
+// CONFIG — fill these three in before deploying.
+// The anon key is a public, RLS-protected key; it is safe in frontend code.
+// ============================================================================
+const SUPABASE_URL  = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_ANON = "YOUR-PUBLISHABLE-ANON-KEY";
+const LOGIN_URL     = "/login.html";   // your existing login page
+
+// ---- field spec (input id === submissions column name) ---------------------
+const FIELDS = [
+  // group, name, label, type, hint
+  ["identity","study_number","Study number","text",""],
+  ["identity","study_name","Study name","text",""],
+  ["identity","link","Link","text","Leave blank until the study is live online"],
+  ["eligibility","sex","Sex","select",""],
+  ["eligibility","min_age","Min age","int",""],
+  ["eligibility","max_age","Max age","int","Blank = open-ended"],
+  ["eligibility","bmi","BMI","text","Optional — deferred for most clinics"],
+  ["compensation","compensation_total","Total compensation ($)","num",""],
+  ["compensation","compensation_per_day","Per-day rate ($)","num","Optional"],
+  ["logistics","check_in","Check-in date","date",""],
+  ["logistics","check_out","Check-out date","date",""],
+  ["logistics","dates","Dates","text","Free-text range, e.g. Jun 28 2026 – Aug 30 2026"],
+  ["logistics","commitment","Commitment / details","textarea",""],
+];
+const FULL_WIDTH = new Set(["study_name","link","dates","commitment"]);
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const $ = id => document.getElementById(id);
+const prettyName = n => n.replace(/_/g," ").replace(/\b\w/g, c => c.toUpperCase());
+
+let clinics = [];      // registry rows
+let current = null;    // selected clinic row
+
+// ---- boot ------------------------------------------------------------------
+(async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){
+    return showGate("Sign in to submit",
+      "You need to be signed in as an approved contributor to add a study.",
+      "Go to sign in", LOGIN_URL);
+  }
+  const { data: profile, error } = await sb
+    .from("profiles").select("is_contributor,is_admin").eq("id", session.user.id).single();
+  if(error || !profile || !(profile.is_contributor || profile.is_admin)){
+    return showGate("Account not enabled yet",
+      "Your account isn't approved for submissions. Ask an admin to enable contributor access, then reload.");
+  }
+  buildForm();
+  await loadClinics();
+  $("app").classList.remove("hidden");
+})();
+
+function showGate(title, msg, btnText, btnHref){
+  $("gate").innerHTML =
+    `<h2>${title}</h2><p>${msg}</p>` +
+    (btnText ? `<a class="btn" href="${btnHref}">${btnText}</a>` : "");
+  $("gate").classList.remove("hidden");
+  $("app").classList.add("hidden");
+}
+
+// ---- form construction -----------------------------------------------------
+function buildForm(){
+  for(const [group,name,label,type,hint] of FIELDS){
+    const wrap = document.createElement("div");
+    wrap.className = "field" + (FULL_WIDTH.has(name) ? " full" : "");
+    wrap.dataset.name = name;
+
+    const lab = document.createElement("label");
+    lab.setAttribute("for", name);
+    lab.innerHTML = label + `<span class="req hidden">*</span>`;
+    wrap.appendChild(lab);
+
+    let input;
+    if(type === "select"){
+      input = document.createElement("select");
+      input.innerHTML = `<option value="">—</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+        <option value="all">All</option>`;
+    } else if(type === "textarea"){
+      input = document.createElement("textarea");
+      input.rows = 2;
+    } else {
+      input = document.createElement("input");
+      input.type = (type==="int"||type==="num") ? "number" : (type==="date" ? "date" : "text");
+      if(type==="num") input.step = "0.01";
+      if(type==="int") input.step = "1";
+    }
+    input.id = name;
+    input.dataset.type = type;
+    wrap.appendChild(input);
+
+    if(hint){
+      const h = document.createElement("div");
+      h.className = "hint"; h.textContent = hint; wrap.appendChild(h);
+    }
+    const err = document.createElement("div");
+    err.className = "errmsg"; wrap.appendChild(err);
+
+    $("grp-" + group).appendChild(wrap);
+  }
+  $("form").addEventListener("submit", onSubmit);
+}
+
+// ---- registry --------------------------------------------------------------
+async function loadClinics(){
+  const { data, error } = await sb
+    .from("clinic_registry").select("*").order("display_name");
+  if(error){ setStatus("Couldn't load clinics: " + error.message, false); return; }
+  clinics = data || [];
+  const sel = $("clinic");
+  for(const c of clinics){
+    const o = document.createElement("option");
+    o.value = c.clinic_id; o.textContent = c.display_name; sel.appendChild(o);
+  }
+  sel.addEventListener("change", onClinicChange);
+}
+
+function onClinicChange(e){
+  current = clinics.find(c => c.clinic_id === e.target.value) || null;
+  $("form").classList.toggle("hidden", !current);
+  $("clinicMeta").classList.toggle("hidden", !current);
+  $("keyLine").classList.toggle("hidden", !current);
+  clearStatus();
+  if(!current) return;
+
+  $("mCompany").textContent = current.company || "—";
+  $("mSite").textContent = current.site || "—";
+
+  // match-key chips
+  $("keyChips").innerHTML = "";
+  for(const k of current.match_key){
+    const chip = document.createElement("span");
+    chip.className = "chip"; chip.textContent = prettyName(k);
+    $("keyChips").appendChild(chip);
+  }
+
+  // mark required fields
+  const required = new Set(current.required_fields);
+  document.querySelectorAll(".field").forEach(f => {
+    const isReq = required.has(f.dataset.name);
+    f.classList.toggle("is-required", isReq);
+    f.classList.remove("error");
+    f.querySelector(".errmsg").textContent = "";
+    f.querySelector(".req").classList.toggle("hidden", !isReq);
+  });
+}
+
+// ---- submit ----------------------------------------------------------------
+async function onSubmit(ev){
+  ev.preventDefault();
+  if(!current) return;
+  clearStatus();
+
+  // validate required
+  let ok = true;
+  const required = new Set(current.required_fields);
+  document.querySelectorAll(".field").forEach(f => {
+    f.classList.remove("error");
+    f.querySelector(".errmsg").textContent = "";
+    if(required.has(f.dataset.name)){
+      const v = f.querySelector("input,select,textarea").value.trim();
+      if(v === ""){
+        ok = false;
+        f.classList.add("error");
+        f.querySelector(".errmsg").textContent = "Required for this clinic.";
+      }
+    }
+  });
+  if(!ok){ setStatus("Fill the highlighted fields.", false); return; }
+
+  // build typed payload
+  const row = {
+    clinic_id: current.clinic_id,
+    company:   current.company,
+    site:      current.site,
+  };
+  for(const [, name,,type] of FIELDS){
+    const raw = $(name).value.trim();
+    if(raw === "") continue;
+    if(type === "int")      row[name] = parseInt(raw, 10);
+    else if(type === "num") row[name] = parseFloat(raw);
+    else                    row[name] = raw;
+  }
+  // age sanity
+  if(row.min_age!=null && row.max_age!=null && row.max_age < row.min_age){
+    setStatus("Max age is below min age.", false); return;
+  }
+
+  $("saveBtn").disabled = true;
+  setStatus("Saving…", true);
+  const { error } = await sb.from("submissions").insert(row);
+  $("saveBtn").disabled = false;
+
+  if(error){ setStatus("Save failed: " + error.message, false); return; }
+
+  setStatus("Saved — it'll broadcast on this clinic's next run.", true);
+  // reset value fields, keep clinic selected
+  FIELDS.forEach(([,name]) => { $(name).value = ""; });
+}
+
+function setStatus(msg, good){
+  const el = $("status");
+  el.textContent = msg;
+  el.className = "status " + (good ? "ok" : "bad");
+}
+function clearStatus(){ $("status").textContent = ""; $("status").className = "status"; }
+</script>
+</body>
+</html>
 
