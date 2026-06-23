@@ -34,6 +34,8 @@
   .tag{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
   .userline{margin-left:auto;font-family:"Space Mono",monospace;font-size:12px;color:var(--muted)}
   .userline b{color:var(--ink);font-weight:700}
+  .userline .signout{font-family:"Space Mono",monospace;font-size:12px;background:none;border:none;
+    color:var(--accent);cursor:pointer;text-decoration:underline;padding:0;margin-left:12px}
   .lede{color:var(--muted);font-size:14px;margin:0 0 24px}
 
   /* ---- card -------------------------------------------------------------- */
@@ -95,7 +97,7 @@
   <header class="masthead">
     <span class="wordmark">Study Scoops<span class="dot">.</span></span>
     <span class="tag">Contributor</span>
-    <span class="userline hidden" id="userLine">Signed in as <b id="userEmail">—</b></span>
+    <span class="userline hidden" id="userLine">Signed in as <b id="userEmail">—</b><button class="signout" id="signout" type="button">Sign out</button></span>
   </header>
   <p class="lede">Enter a trial before it hits the clinic site. Fields marked <span style="color:var(--req);font-weight:700">*</span> are what this clinic matches on — fill them so the study can release early.</p>
 
@@ -152,7 +154,8 @@
 // ============================================================================
 const SUPABASE_URL  = "https://hkizcacrvtnsclmfdbeg.supabase.co";
 const SUPABASE_ANON = "sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr";
-const LOGIN_URL     = "/login";   // clean URL → login/index.html
+const LOGIN_URL     = "/login";                  // clean URL → login/index.html
+const HOME_URL      = "https://studyscoops.com"; // where sign-out lands
 
 // ---- field spec (input id === submissions column name) ---------------------
 const FIELDS = [
@@ -196,6 +199,10 @@ let current = null;    // selected clinic row
   // signed in + approved
   $("userEmail").textContent = session.user.email;
   $("userLine").classList.remove("hidden");
+  $("signout").addEventListener("click", async () => {
+    await sb.auth.signOut();
+    window.location.href = HOME_URL;
+  });
   buildForm();
   await loadClinics();
   $("app").classList.remove("hidden");
@@ -257,8 +264,17 @@ function buildForm(){
 async function loadClinics(){
   const { data, error } = await sb
     .from("clinic_registry").select("*").order("display_name");
-  if(error){ setStatus("Couldn't load clinics: " + error.message, false); return; }
+  if(error){
+    console.error("clinic_registry query failed:", error);
+    setStatus("Couldn't load clinics: " + error.message, false);
+    return;
+  }
   clinics = data || [];
+  if(clinics.length === 0){
+    console.warn("clinic_registry returned 0 rows — check the table is seeded and RLS lets this user read it.");
+    setStatus("No clinics available. The registry returned nothing — check it's seeded and readable.", false);
+    return;
+  }
   const sel = $("clinic");
   for(const c of clinics){
     const o = document.createElement("option");
