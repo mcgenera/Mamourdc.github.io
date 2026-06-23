@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Study Scoops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#F4F4F0; --card:#FFFFFF; --ink:#15191F; --muted:#6A7180;
+    --line:#E3E3DB; --line-strong:#CFCFC4;
+    --accent:#15616D; --accent-ink:#0B3A42; --accent-soft:#E2EEEF;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.45;-webkit-font-smoothing:antialiased;padding:32px 18px 80px}
+  .wrap{max-width:720px;margin:0 auto}
+
+  header.masthead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .wordmark{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em}
+  .wordmark .dot{color:var(--accent)}
+  .tag{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .whoami{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+  .linkbtn{font:inherit;font-size:13px;background:none;border:none;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline}
+
+  h1{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:26px;letter-spacing:-0.01em;margin:0 0 4px}
+  .lede{color:var(--muted);font-size:14px;margin:0 0 26px}
+
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;min-height:104px;display:flex;flex-direction:column}
+  .tile h3{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px;margin:0 0 4px}
+  .tile p{font-size:13px;color:var(--muted);margin:0}
+  .pill{align-self:flex-start;margin-top:auto;font-family:"Space Mono",monospace;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+        background:#EFEFEA;color:var(--muted);border-radius:6px;padding:3px 8px}
+
+  .admin{margin-top:26px}
+  .admin-btn{display:inline-flex;align-items:center;gap:9px;font:inherit;font-weight:600;background:var(--accent);color:#fff;
+             border:none;border-radius:9px;padding:11px 18px;cursor:pointer}
+  .admin-btn:hover{background:var(--accent-ink)}
+  .admin-btn .caret{transition:transform .18s;display:inline-block}
+  .admin-btn[aria-expanded="true"] .caret{transform:rotate(180deg)}
+  .admin-btn svg{width:16px;height:16px}
+
+  .admin-panel{display:none;margin-top:14px}
+  .admin-panel.open{display:block}
+  .admin-hint{font-size:12px;color:var(--muted);margin:0 0 12px}
+
+  .action{display:flex;align-items:center;justify-content:space-between;gap:14px;text-decoration:none;color:inherit;
+          background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:var(--radius);
+          padding:16px 18px}
+  .action + .action{margin-top:10px}
+  .action:hover{border-color:var(--line-strong);border-left-color:var(--accent)}
+  .action .t{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:15px}
+  .action .d{font-size:13px;color:var(--muted);margin-top:2px}
+  .action .arrow{font-size:20px;color:var(--accent)}
+  .action.muted{border-left-color:var(--line-strong);opacity:.75;cursor:default}
+  .action.muted .arrow{color:var(--muted)}
+
+  .hidden{display:none}
+  #loading{color:var(--muted);font-size:14px;padding:40px 0}
+  @media (max-width:560px){ .tiles{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loading">Loading…</div>
+
+  <div id="app" class="hidden">
+    <header class="masthead">
+      <div class="brand">
+        <span class="wordmark">Study Scoops<span class="dot">.</span></span>
+        <span class="tag">Dashboard</span>
+      </div>
+      <div class="whoami">
+        <span id="whoami"></span>
+        <button class="linkbtn" id="signout">Sign out</button>
+      </div>
+    </header>
+
+    <h1>Welcome back</h1>
+    <p class="lede" id="sub">Your member home.</p>
+
+    <div class="tiles">
+      <div class="tile">
+        <h3>Study board</h3>
+        <p>Browse current trials and set filters.</p>
+        <span class="pill">coming soon</span>
+      </div>
+      <div class="tile">
+        <h3>Account</h3>
+        <p>Subscription and alert settings.</p>
+        <span class="pill">coming soon</span>
+      </div>
+    </div>
+
+    <!-- Admin button: rendered only for contributors/admins (JS unhides it) -->
+    <div class="admin hidden" id="adminWrap">
+      <button class="admin-btn" id="adminBtn" aria-expanded="false" aria-controls="adminPanel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Admin
+        <span class="caret">▾</span>
+      </button>
+
+      <div class="admin-panel" id="adminPanel" role="region" aria-label="Admin tools">
+        <p class="admin-hint">Tools available to your role.</p>
+
+        <a class="action" href="submit.html" id="submitAction">
+          <span>
+            <span class="t">Submit a study</span>
+            <span class="d">Add a trial manually — broadcasts on the clinic's next run.</span>
+          </span>
+          <span class="arrow">→</span>
+        </a>
+
+        <!-- admin-only: registry management (JS unhides for is_admin) -->
+        <div class="action muted hidden" id="manageAction">
+          <span>
+            <span class="t">Manage clinics</span>
+            <span class="d">Edit the clinic registry — via the Supabase SQL editor for now.</span>
+          </span>
+          <span class="arrow">→</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================================
+// CONFIG — fill these in (same values as your other pages).
+// ============================================================================
+const SUPABASE_URL  = "https://hkizcacrvtnsclmfdbeg.supabase.co";
+const SUPABASE_ANON = "YOUR-PUBLISHABLE-ANON-KEY";
+const LOGIN_URL     = "/login";
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const $ = id => document.getElementById(id);
+
+(async function init(){
+  const { data:{ session } } = await sb.auth.getSession();
+  if(!session){ window.location.href = LOGIN_URL; return; }
+
+  const email = session.user.email || "";
+  $("whoami").textContent = email;
+  $("sub").textContent = email ? ("Signed in as " + email) : "Your member home.";
+
+  // role flags decide what's visible
+  const { data: profile } = await sb
+    .from("profiles").select("is_contributor,is_admin").eq("id", session.user.id).single();
+
+  const isContributor = !!(profile && profile.is_contributor);
+  const isAdmin       = !!(profile && profile.is_admin);
+
+  if(isContributor || isAdmin){
+    $("adminWrap").classList.remove("hidden");
+    $("adminBtn").addEventListener("click", () => {
+      const open = $("adminPanel").classList.toggle("open");
+      $("adminBtn").setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    if(isAdmin) $("manageAction").classList.remove("hidden");
+  }
+
+  $("signout").addEventListener("click", async () => {
+    await sb.auth.signOut();
+    window.location.href = LOGIN_URL;
+  });
+
+  $("loading").classList.add("hidden");
+  $("app").classList.remove("hidden");
+})();
+</script>
+</body>
+</html>
