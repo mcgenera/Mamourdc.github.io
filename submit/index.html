@@ -32,6 +32,8 @@
   .wordmark{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em}
   .wordmark .dot{color:var(--accent)}
   .tag{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .userline{margin-left:auto;font-family:"Space Mono",monospace;font-size:12px;color:var(--muted)}
+  .userline b{color:var(--ink);font-weight:700}
   .lede{color:var(--muted);font-size:14px;margin:0 0 24px}
 
   /* ---- card -------------------------------------------------------------- */
@@ -93,6 +95,7 @@
   <header class="masthead">
     <span class="wordmark">Study Scoops<span class="dot">.</span></span>
     <span class="tag">Contributor</span>
+    <span class="userline hidden" id="userLine">Signed in as <b id="userEmail">—</b></span>
   </header>
   <p class="lede">Enter a trial before it hits the clinic site. Fields marked <span style="color:var(--req);font-weight:700">*</span> are what this clinic matches on — fill them so the study can release early.</p>
 
@@ -143,12 +146,13 @@
 
 <script>
 // ============================================================================
-// CONFIG — fill these three in before deploying.
-// The anon key is a public, RLS-protected key; it is safe in frontend code.
+// CONFIG
+// The anon (publishable) key is a public, RLS-protected key — safe in frontend.
+// Paste yours from Supabase → Project → API Keys (publishable / anon).
 // ============================================================================
-const SUPABASE_URL  = "https://YOUR-PROJECT.supabase.co";
-const SUPABASE_ANON = "YOUR-PUBLISHABLE-ANON-KEY";
-const LOGIN_URL     = "/login.html";   // your existing login page
+const SUPABASE_URL  = "https://hkizcacrvtnsclmfdbeg.supabase.co";
+const SUPABASE_ANON = "PASTE-YOUR-PUBLISHABLE-ANON-KEY";
+const LOGIN_URL     = "/login";   // clean URL → login/index.html
 
 // ---- field spec (input id === submissions column name) ---------------------
 const FIELDS = [
@@ -190,6 +194,9 @@ let current = null;    // selected clinic row
     return showGate("Account not enabled yet",
       "Your account isn't approved for submissions. Ask an admin to enable contributor access, then reload.");
   }
+  // signed in + approved
+  $("userEmail").textContent = session.user.email;
+  $("userLine").classList.remove("hidden");
   buildForm();
   await loadClinics();
   $("app").classList.remove("hidden");
@@ -353,4 +360,3 @@ function clearStatus(){ $("status").textContent = ""; $("status").className = "s
 </script>
 </body>
 </html>
-
