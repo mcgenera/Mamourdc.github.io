@@ -138,23 +138,35 @@ const SUPABASE_URL  = "https://hkizcacrvtnsclmfdbeg.supabase.co";
 const SUPABASE_ANON = "YOUR-PUBLISHABLE-ANON-KEY";
 const LOGIN_URL     = "/login";
 
+// ---- PREVIEW MODE: skips auth so you can see the layout --------------------
+// Flip these to preview different roles (contributor sees Submit; admin also
+// sees Manage clinics; both false = a plain member with no admin button).
+const PREVIEW = true;
+const PREVIEW_IS_CONTRIBUTOR = true;
+const PREVIEW_IS_ADMIN = true;
+
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const $ = id => document.getElementById(id);
 
 (async function init(){
-  const { data:{ session } } = await sb.auth.getSession();
-  if(!session){ window.location.href = LOGIN_URL; return; }
+  let session, isContributor, isAdmin;
+  if(PREVIEW){
+    session = { user: { email: "contributor@studyscoops.com", id: "preview" } };
+    isContributor = PREVIEW_IS_CONTRIBUTOR;
+    isAdmin = PREVIEW_IS_ADMIN;
+  } else {
+    const res = await sb.auth.getSession();
+    session = res.data.session;
+    if(!session){ window.location.href = LOGIN_URL; return; }
+    const { data: profile } = await sb
+      .from("profiles").select("is_contributor,is_admin").eq("id", session.user.id).single();
+    isContributor = !!(profile && profile.is_contributor);
+    isAdmin       = !!(profile && profile.is_admin);
+  }
 
   const email = session.user.email || "";
   $("whoami").textContent = email;
   $("sub").textContent = email ? ("Signed in as " + email) : "Your member home.";
-
-  // role flags decide what's visible
-  const { data: profile } = await sb
-    .from("profiles").select("is_contributor,is_admin").eq("id", session.user.id).single();
-
-  const isContributor = !!(profile && profile.is_contributor);
-  const isAdmin       = !!(profile && profile.is_admin);
 
   if(isContributor || isAdmin){
     $("adminWrap").classList.remove("hidden");
@@ -166,6 +178,7 @@ const $ = id => document.getElementById(id);
   }
 
   $("signout").addEventListener("click", async () => {
+    if(PREVIEW){ alert("Preview — sign out is disabled."); return; }
     await sb.auth.signOut();
     window.location.href = LOGIN_URL;
   });
