@@ -292,7 +292,7 @@ function onClinicChange(e){
   if(!current) return;
 
   $("mCompany").textContent = current.company || "—";
-  $("mSite").textContent = current.site || "—";
+ $("mSite").textContent = current.location || "—";
 
   // match-key chips
   $("keyChips").innerHTML = "";
@@ -340,7 +340,7 @@ async function onSubmit(ev){
   const row = {
     clinic_id: current.clinic_id,
     company:   current.company,
-    site:      current.site,
+    site: current.location,
   };
   for(const [, name,,type] of FIELDS){
     const raw = $(name).value.trim();
