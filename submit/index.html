@@ -70,6 +70,16 @@
   .field.error input,.field.error select,.field.error textarea{border-color:var(--err);outline-color:var(--err)}
   .field.error .errmsg{color:var(--err);font-size:12px;margin-top:4px}
 
+  /* ---- sex checklist ------------------------------------------------------ */
+  .checklist{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .check-item{border:1px solid var(--line-strong);border-radius:8px;padding:10px 12px;background:#fff}
+  .check-item label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;margin:0;cursor:pointer}
+  .check-item label.sub{margin-top:8px;padding-left:24px;font-weight:400;color:var(--muted)}
+  .check-item label.sub.enabled{color:var(--ink)}
+  .check-item input[type="checkbox"]{width:auto;margin:0;accent-color:var(--accent)}
+  .field.error .check-item{border-color:var(--err)}
+  @media (max-width:560px){ .checklist{grid-template-columns:1fr} }
+
   /* ---- actions ----------------------------------------------------------- */
   .actions{display:flex;align-items:center;gap:14px;margin-top:22px}
   button.primary{
@@ -157,23 +167,37 @@ const SUPABASE_ANON = "sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr";
 const LOGIN_URL     = "/login";                  // clean URL → login/index.html
 const HOME_URL      = "https://studyscoops.com"; // where sign-out lands
 
-// ---- field spec (input id === submissions column name) ---------------------
+// ---- field spec (input id === column name in the raw_<clinic_id> table) ----
+// Submissions land in a per-clinic staging table (raw_<clinic_id>) with every
+// column typed as text, exactly as entered. Clean them to the scraped format
+// before promoting into the canonical pipeline.
+// "sex" is rendered as a custom checklist (see buildSexField) and is not here.
 const FIELDS = [
   // group, name, label, type, hint
   ["identity","study_number","Study number","text",""],
   ["identity","study_name","Study name","text",""],
-  ["eligibility","sex","Sex","select",""],
   ["eligibility","min_age","Min age","int",""],
   ["eligibility","max_age","Max age","int","Blank = open-ended"],
-  ["eligibility","bmi","BMI","text","Optional — deferred for most clinics"],
+  ["eligibility","min_bmi","Min BMI","num",""],
+  ["eligibility","max_bmi","Max BMI","num","Blank = open-ended"],
   ["compensation","compensation_total","Total compensation ($)","num",""],
   ["compensation","compensation_per_day","Per-day rate ($)","num","Optional"],
   ["logistics","check_in","Check-in date","date",""],
   ["logistics","check_out","Check-out date","date",""],
-  ["logistics","dates","Dates","text","Free-text range, e.g. Jun 28 2026 – Aug 30 2026"],
+  ["logistics","dates","Study Dates (first date and last date)","text","Free-text range, e.g. Jun 28 2026 – Aug 30 2026"],
+  ["logistics","check_ins","Number of check-ins","int",""],
+  ["logistics","total_overnights","Total overnights","int",""],
+  ["logistics","opvs","OPVs","int","Outpatient visits"],
+  ["logistics","phone_calls","Phone calls","int",""],
   ["logistics","commitment","Commitment / details","textarea",""],
 ];
 const FULL_WIDTH = new Set(["study_name","dates","commitment"]);
+
+// sex checklist spec: parent value + NCB sub-option value
+const SEX_OPTIONS = [
+  { id:"male",   label:"Male",   ncbValue:"male_ncb"   },
+  { id:"female", label:"Female", ncbValue:"female_ncb" },
+];
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const $ = id => document.getElementById(id);
@@ -218,6 +242,7 @@ function showGate(title, msg, btnText, btnHref){
 
 // ---- form construction -----------------------------------------------------
 function buildForm(){
+  buildSexField(); // sex checklist goes first in Eligibility
   for(const [group,name,label,type,hint] of FIELDS){
     const wrap = document.createElement("div");
     wrap.className = "field" + (FULL_WIDTH.has(name) ? " full" : "");
@@ -229,13 +254,7 @@ function buildForm(){
     wrap.appendChild(lab);
 
     let input;
-    if(type === "select"){
-      input = document.createElement("select");
-      input.innerHTML = `<option value="">—</option>
-        <option value="male">Male</option>
-        <option value="female">Female</option>
-        <option value="all">All</option>`;
-    } else if(type === "textarea"){
+    if(type === "textarea"){
       input = document.createElement("textarea");
       input.rows = 2;
     } else {
@@ -258,6 +277,86 @@ function buildForm(){
     $("grp-" + group).appendChild(wrap);
   }
   $("form").addEventListener("submit", onSubmit);
+}
+
+function buildSexField(){
+  const wrap = document.createElement("div");
+  wrap.className = "field full";
+  wrap.dataset.name = "sex";
+
+  const lab = document.createElement("label");
+  lab.innerHTML = `Sex<span class="req hidden">*</span>`;
+  wrap.appendChild(lab);
+
+  const list = document.createElement("div");
+  list.className = "checklist";
+
+  for(const opt of SEX_OPTIONS){
+    const item = document.createElement("div");
+    item.className = "check-item";
+
+    // parent checkbox (Male / Female)
+    const parentLab = document.createElement("label");
+    const parent = document.createElement("input");
+    parent.type = "checkbox";
+    parent.id = "sex_" + opt.id;
+    parent.value = opt.id;
+    parentLab.appendChild(parent);
+    parentLab.appendChild(document.createTextNode(opt.label));
+    item.appendChild(parentLab);
+
+    // NCB sub-option
+    const subLab = document.createElement("label");
+    subLab.className = "sub";
+    const sub = document.createElement("input");
+    sub.type = "checkbox";
+    sub.id = "sex_" + opt.id + "_ncb";
+    sub.value = opt.ncbValue;
+    sub.disabled = true;
+    subLab.appendChild(sub);
+    subLab.appendChild(document.createTextNode("NCB (non child-bearing)"));
+    item.appendChild(subLab);
+
+    // sub only makes sense if the parent is checked
+    parent.addEventListener("change", () => {
+      sub.disabled = !parent.checked;
+      subLab.classList.toggle("enabled", parent.checked);
+      if(!parent.checked) sub.checked = false;
+    });
+
+    list.appendChild(item);
+  }
+  wrap.appendChild(list);
+
+  const err = document.createElement("div");
+  err.className = "errmsg";
+  wrap.appendChild(err);
+
+  $("grp-eligibility").appendChild(wrap);
+}
+
+// Reads the checklist into a single value like "male,female_ncb".
+// Parent checked + NCB checked → the _ncb variant replaces the plain value.
+function getSexValue(){
+  const parts = [];
+  for(const opt of SEX_OPTIONS){
+    const parent = $("sex_" + opt.id);
+    const sub    = $("sex_" + opt.id + "_ncb");
+    if(!parent.checked) continue;
+    parts.push(sub.checked ? opt.ncbValue : opt.id);
+  }
+  return parts.join(",");
+}
+
+function resetSexField(){
+  for(const opt of SEX_OPTIONS){
+    const parent = $("sex_" + opt.id);
+    const sub    = $("sex_" + opt.id + "_ncb");
+    parent.checked = false;
+    sub.checked = false;
+    sub.disabled = true;
+    sub.closest("label").classList.remove("enabled");
+  }
 }
 
 // ---- registry --------------------------------------------------------------
@@ -283,6 +382,18 @@ async function loadClinics(){
   sel.addEventListener("change", onClinicChange);
 }
 
+// Registries created before the min/max BMI split may still list "bmi" —
+// expand it so both new fields inherit the requirement.
+function expandRequired(list){
+  const req = new Set(list || []);
+  if(req.has("bmi")){
+    req.delete("bmi");
+    req.add("min_bmi");
+    req.add("max_bmi");
+  }
+  return req;
+}
+
 function onClinicChange(e){
   current = clinics.find(c => c.clinic_id === e.target.value) || null;
   $("form").classList.toggle("hidden", !current);
@@ -292,7 +403,7 @@ function onClinicChange(e){
   if(!current) return;
 
   $("mCompany").textContent = current.company || "—";
- $("mSite").textContent = current.location || "—";
+  $("mSite").textContent = current.location || "—";
 
   // match-key chips
   $("keyChips").innerHTML = "";
@@ -303,7 +414,7 @@ function onClinicChange(e){
   }
 
   // mark required fields
-  const required = new Set(current.required_fields);
+  const required = expandRequired(current.required_fields);
   document.querySelectorAll(".field").forEach(f => {
     const isReq = required.has(f.dataset.name);
     f.classList.toggle("is-required", isReq);
@@ -321,49 +432,58 @@ async function onSubmit(ev){
 
   // validate required
   let ok = true;
-  const required = new Set(current.required_fields);
+  const required = expandRequired(current.required_fields);
   document.querySelectorAll(".field").forEach(f => {
     f.classList.remove("error");
     f.querySelector(".errmsg").textContent = "";
     if(required.has(f.dataset.name)){
-      const v = f.querySelector("input,select,textarea").value.trim();
-      if(v === ""){
+      let empty;
+      if(f.dataset.name === "sex"){
+        empty = getSexValue() === "";
+      } else {
+        empty = f.querySelector("input,select,textarea").value.trim() === "";
+      }
+      if(empty){
         ok = false;
         f.classList.add("error");
-        f.querySelector(".errmsg").textContent = "Required for this clinic.";
+        f.querySelector(".errmsg").textContent = f.dataset.name === "sex"
+          ? "Check at least one option."
+          : "Required for this clinic.";
       }
     }
   });
   if(!ok){ setStatus("Fill the highlighted fields.", false); return; }
 
-  // build typed payload
-  const row = {
-    clinic_id: current.clinic_id,
-    company:   current.company,
-    site: current.location,
-  };
-  for(const [, name,,type] of FIELDS){
+  // build raw payload — values stay exactly as typed; cleaning happens later
+  const row = {};
+  const sexValue = getSexValue();
+  if(sexValue !== "") row.sex = sexValue;
+
+  for(const [, name] of FIELDS){
     const raw = $(name).value.trim();
-    if(raw === "") continue;
-    if(type === "int")      row[name] = parseInt(raw, 10);
-    else if(type === "num") row[name] = parseFloat(raw);
-    else                    row[name] = raw;
+    if(raw !== "") row[name] = raw;
   }
-  // age sanity
-  if(row.min_age!=null && row.max_age!=null && row.max_age < row.min_age){
+  // soft sanity checks — only when both sides parse as numbers
+  const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+  if(num(row.min_age)!=null && num(row.max_age)!=null && num(row.max_age) < num(row.min_age)){
     setStatus("Max age is below min age.", false); return;
   }
+  if(num(row.min_bmi)!=null && num(row.max_bmi)!=null && num(row.max_bmi) < num(row.min_bmi)){
+    setStatus("Max BMI is below min BMI.", false); return;
+  }
 
+  const rawTable = "raw_" + current.clinic_id;
   $("saveBtn").disabled = true;
   setStatus("Saving…", true);
-  const { error } = await sb.from("submissions").insert(row);
+  const { error } = await sb.from(rawTable).insert(row);
   $("saveBtn").disabled = false;
 
   if(error){ setStatus("Save failed: " + error.message, false); return; }
 
-  setStatus("Saved — it'll broadcast on this clinic's next run.", true);
+  setStatus("Saved to " + rawTable + " — clean it to the scraped format before it releases.", true);
   // reset value fields, keep clinic selected
   FIELDS.forEach(([,name]) => { $(name).value = ""; });
+  resetSexField();
 }
 
 function setStatus(msg, good){
