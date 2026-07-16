@@ -125,6 +125,8 @@
         <input id="fAge" type="number" min="18" max="99" placeholder="—" /></div>
       <div class="field"><label for="fPay">Pay at least $</label>
         <input id="fPay" type="number" min="0" step="100" placeholder="—" /></div>
+      <div class="field"><label for="fNightsMin">Min nights</label>
+        <input id="fNightsMin" type="number" min="0" placeholder="—" /></div>
       <div class="field"><label for="fNights">Max nights</label>
         <input id="fNights" type="number" min="0" placeholder="—" /></div>
       <div class="field"><label for="fSort">Sort</label>
@@ -271,6 +273,7 @@ function visible(){
   const age = parseInt($("fAge").value, 10);
   const pay = parseFloat($("fPay").value);
   const nights = parseInt($("fNights").value, 10);
+  const nightsMin = parseInt($("fNightsMin").value, 10);
   const showRemoved = $("fRemoved").checked;
 
   let rows = all.filter(r => {
@@ -282,6 +285,7 @@ function visible(){
     if(!isNaN(age) && r.age_min != null && (age < r.age_min || age > (r.age_max ?? 100))) return false;
     if(!isNaN(pay) && !((r.pay_max ?? r.pay) >= pay)) return false;
     if(!isNaN(nights) && (r.overnights_max ?? r.overnights ?? 0) > nights) return false;
+    if(!isNaN(nightsMin) && (r.overnights ?? r.overnights_max ?? 0) < nightsMin) return false;
     if(q){
       const hay = [r.title, r.company, r.study_name, r.study_number, r.details,
                    r.location_city, r.location_state].filter(Boolean).join(" ").toLowerCase();
@@ -316,10 +320,10 @@ function render(){
 }
 
 /* ---------- events ---------- */
-["q","fState","fGender","fAge","fPay","fNights","fSort","fRemoved"].forEach(id =>
+["q","fState","fGender","fAge","fPay","fNightsMin","fNights","fSort","fRemoved"].forEach(id =>
   $(id).addEventListener("input", render));
 $("clear").addEventListener("click", () => {
-  ["q","fAge","fPay","fNights"].forEach(id => $(id).value = "");
+  ["q","fAge","fPay","fNightsMin","fNights"].forEach(id => $(id).value = "");
   $("fState").value = ""; $("fGender").value = ""; $("fSort").value = "new";
   $("fRemoved").checked = true;
   clinicSel.clear();
