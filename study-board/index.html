@@ -1,11 +1,373 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Contact</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Study Board — Study Scoops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F4F4F0; --card:#FFFFFF; --ink:#15191F; --muted:#6A7180;
+    --line:#E3E3DB; --line-strong:#CFCFC4;
+    --accent:#15616D; --accent-ink:#0B3A42; --accent-soft:#E2EEEF;
+    --new:#B45309; --new-soft:#FEF3C7;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:"Inter",system-ui,sans-serif;line-height:1.45;-webkit-font-smoothing:antialiased;padding:32px 18px 80px}
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header.masthead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand a{color:inherit;text-decoration:none}
+  .wordmark{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.02em}
+  .wordmark .dot{color:var(--accent)}
+  .tag{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .navlinks{display:flex;gap:16px;font-size:13px}
+  .navlinks a{color:var(--accent);text-decoration:none}
+  .navlinks a:hover{text-decoration:underline}
+
+  h1{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:26px;letter-spacing:-0.01em;margin:0 0 4px}
+  .lede{color:var(--muted);font-size:14px;margin:0 0 20px}
+
+  /* ---------- filter bar ---------- */
+  .filters{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:18px}
+  .frow{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-family:"Space Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .field input,.field select{font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line-strong);border-radius:7px;background:#fff;color:var(--ink)}
+  .field input:focus,.field select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .field input[type=number]{width:86px}
+  #q{width:190px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .chip{font:inherit;font-size:12.5px;padding:5px 11px;border:1px solid var(--line-strong);border-radius:999px;background:#fff;color:var(--muted);cursor:pointer}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .ftools{display:flex;align-items:center;gap:14px;margin-left:auto}
+  .toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+  .linkbtn{font:inherit;font-size:13px;background:none;border:none;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline}
+
+  /* ---------- table ---------- */
+  .board{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .tablewrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{font-family:"Space Mono",monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+           text-align:left;padding:10px 12px;border-bottom:1px solid var(--line-strong);white-space:nowrap;background:#FAFAF7}
+  tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tbody tr.study{cursor:pointer}
+  tbody tr.study:hover td{background:#FBFBF8}
+  .main{font-weight:600}
+  .sub{font-size:12px;color:var(--muted);margin-top:1px}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .paycell .main{color:var(--accent-ink)}
+  .tagrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .badge{font-family:"Space Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-radius:5px;padding:2px 6px}
+  .badge.new{background:var(--new-soft);color:var(--new)}
+  .badge.status{background:var(--accent-soft);color:var(--accent-ink)}
+  .badge.ncb{background:#EFEFEA;color:var(--muted)}
+  .badge.gone{background:#F3E8E8;color:#9B3535}
+  .go{display:inline-block;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap}
+  .go:hover{text-decoration:underline}
+
+  tr.removed td{opacity:.55}
+  tr.removed .main,tr.removed .sub,tr.removed .num{text-decoration:line-through}
+  tr.removed .tagrow,tr.removed .go{text-decoration:none}
+
+  tr.expand td{background:#FBFBF8;font-size:13px;color:var(--ink);padding:12px 16px 14px}
+  .xgrid{display:flex;flex-direction:column;gap:6px;max-width:860px}
+  .xlabel{font-family:"Space Mono",monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-right:6px}
+
+  #status{color:var(--muted);font-size:14px;padding:36px 16px;text-align:center}
+  .count{font-family:"Space Mono",monospace;font-size:12px;color:var(--muted);padding:10px 14px;border-top:1px solid var(--line)}
+
+  /* ---------- mobile cards ---------- */
+  @media (max-width:700px){
+    body{padding:20px 10px 60px}
+    thead{display:none}
+    table,tbody,tr,td{display:block;width:100%}
+    tbody tr.study{border-bottom:1px solid var(--line-strong);padding:12px 12px 10px}
+    tbody td{border:none;padding:2px 0}
+    td[data-l]::before{content:attr(data-l);font-family:"Space Mono",monospace;font-size:10px;text-transform:uppercase;
+                       letter-spacing:.06em;color:var(--muted);display:inline-block;width:74px}
+    td.cell-study{padding-bottom:6px}
+    tr.expand td{padding:10px 12px 14px}
+    .ftools{margin-left:0}
+  }
+</style>
 </head>
 <body>
-  <h1>Study Board</h1>
-  <p>Under construction</p>
+<div class="wrap">
+  <header class="masthead">
+    <div class="brand">
+      <a href="/"><span class="wordmark">Study Scoops<span class="dot">.</span></span></a>
+      <span class="tag">Study Board</span>
+    </div>
+    <nav class="navlinks">
+      <a href="/">Home</a>
+      <a href="/dashboard">Dashboard</a>
+    </nav>
+  </header>
+
+  <h1>Current studies</h1>
+  <p class="lede" id="lede">Live board of paid clinical trials. Tap a row for details.</p>
+
+  <div class="filters">
+    <div class="frow">
+      <div class="field"><label for="q">Search</label>
+        <input id="q" type="search" placeholder="condition, clinic, study #…" /></div>
+      <div class="field"><label for="fState">State</label>
+        <select id="fState"><option value="">All</option></select></div>
+      <div class="field"><label for="fGender">For</label>
+        <select id="fGender"><option value="">Anyone</option><option value="m">Men</option><option value="f">Women</option></select></div>
+      <div class="field"><label for="fAge">Your age</label>
+        <input id="fAge" type="number" min="18" max="99" placeholder="—" /></div>
+      <div class="field"><label for="fPay">Pay at least $</label>
+        <input id="fPay" type="number" min="0" step="100" placeholder="—" /></div>
+      <div class="field"><label for="fNights">Max nights</label>
+        <input id="fNights" type="number" min="0" placeholder="—" /></div>
+      <div class="field"><label for="fSort">Sort</label>
+        <select id="fSort">
+          <option value="new">Newest first</option>
+          <option value="payhi">Pay: high → low</option>
+          <option value="paylo">Pay: low → high</option>
+          <option value="date">Starting soonest</option>
+          <option value="clinic">Clinic A → Z</option>
+        </select></div>
+      <div class="ftools">
+        <label class="toggle"><input type="checkbox" id="fRemoved" checked />show recently removed</label>
+        <button class="linkbtn" id="clear">Clear filters</button>
+      </div>
+    </div>
+    <div class="chips" id="clinicChips"></div>
+  </div>
+
+  <div class="board">
+    <div class="tablewrap">
+      <table id="tbl" style="display:none">
+        <thead><tr>
+          <th>Clinic</th><th>Study</th><th>Pay</th><th>Gender</th><th>Ages</th>
+          <th>BMI</th><th>Dates</th><th>Stay</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="status">Loading studies…</div>
+    <div class="count" id="count" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL  = "https://hkizcacrvtnsclmfdbeg.supabase.co";
+const SUPABASE_ANON = "sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr";
+const NEW_WINDOW_H  = 72;   // hours a study counts as NEW
+
+const COLS = ["company","location_city","location_state","study_name","study_number",
+  "cohort","title","status","pay","pay_max","pay_per_day","screen_pay","gender","ncb",
+  "age_min","age_max","bmi_min","bmi_max","smoking","dates_raw","start_date","end_date",
+  "details","overnights","overnights_max","opv","opv_max","link","first_seen","last_seen",
+  "removed_at"].join(",");
+
+const $ = id => document.getElementById(id);
+let all = [];                       // fetched rows
+let clinicSel = new Set();          // empty = all clinics
+
+/* ---------- formatting ---------- */
+const money = n => "$" + Math.round(n).toLocaleString("en-US");
+
+function fmtPay(r){
+  if(!r.pay && !r.pay_max) return {main:"—", sub:""};   // null or 0 = unknown
+  const main = (r.pay_max != null && r.pay_max > r.pay)
+    ? money(r.pay) + "–" + money(r.pay_max) : money(r.pay);
+  return {main, sub: r.pay_per_day != null ? "≈" + money(r.pay_per_day) + "/day" : ""};
+}
+const fmtRange = (lo, hi) => {
+  if(lo == null && hi == null) return "—";
+  if(!lo && !hi) return "—";                    // 0–0 = source had no real value
+  const f = x => (x == null) ? "?" : (Number.isInteger(x) ? x : x.toFixed(1));
+  if(hi != null && hi >= 100) return f(lo) + "+";
+  if(lo == null) return "≤" + f(hi);
+  return f(lo) + "–" + f(hi);
+};
+const dshort = iso => {
+  if(!iso) return null;
+  const d = new Date(iso + "T00:00:00");
+  const opts = {month:"short", day:"numeric"};
+  if(d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
+  return d.toLocaleDateString("en-US", opts);
+};
+function fmtDates(r){
+  const a = dshort(r.start_date), b = dshort(r.end_date);
+  if(a && b) return {main: a + " – " + b, title: ""};
+  if(a) return {main: "From " + a, title: ""};
+  if(r.dates_raw){
+    const t = r.dates_raw.replace(/\s+/g," ").trim();
+    return {main: t.length > 26 ? t.slice(0,25) + "…" : t, title: t};
+  }
+  return {main:"—", title:""};
+}
+function fmtStay(r){
+  const rng = (lo,hi) => (hi != null && lo != null && hi > lo) ? lo + "–" + hi : (lo ?? hi);
+  const n = rng(r.overnights, r.overnights_max);
+  const v = rng(r.opv, r.opv_max);
+  const parts = [];
+  if(n != null) parts.push(n + " " + (n === 1 ? "night" : "nights"));
+  if(v != null) parts.push(v + " " + (v === 1 ? "visit" : "visits"));
+  return parts.length ? parts.join(" · ") : "—";
+}
+const genderLabel = g =>
+  g === "Men and women" ? "Men & women" : (g || "—");
+const isNew = r => !r.removed_at && r.first_seen &&
+  (Date.now() - new Date(r.first_seen).getTime()) < NEW_WINDOW_H * 3600e3;
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- rendering ---------- */
+function rowHTML(r, i){
+  const pay = fmtPay(r), dt = fmtDates(r);
+  const numline = [r.study_number, r.cohort].filter(Boolean).join(" · ");
+  const tags = [];
+  if(r.removed_at) tags.push('<span class="badge gone">removed</span>');
+  if(isNew(r)) tags.push('<span class="badge new">new</span>');
+  if(r.status && !/enrolling/i.test(r.status)) tags.push('<span class="badge status">' + esc(r.status) + "</span>");
+  if(r.ncb) tags.push('<span class="badge ncb">NCB ' + esc(r.ncb) + "</span>");
+  const loc = [r.location_city, r.location_state].filter(Boolean).join(", ");
+  return '<tr class="study' + (r.removed_at ? " removed" : "") + '" data-i="' + i + '">' +
+    '<td class="cell-clinic"><div class="main">' + esc(r.company || "—") + '</div><div class="sub">' + esc(loc) + "</div></td>" +
+    '<td class="cell-study"><div class="main">' + esc(r.title || r.study_name || "Study") + "</div>" +
+      (numline ? '<div class="sub">' + esc(numline) + "</div>" : "") +
+      (tags.length ? '<div class="tagrow">' + tags.join("") + "</div>" : "") + "</td>" +
+    '<td class="paycell num" data-l="Pay"><div class="main">' + pay.main + '</div><div class="sub">' + pay.sub + "</div></td>" +
+    '<td data-l="Gender">' + esc(genderLabel(r.gender)) + "</td>" +
+    '<td class="num" data-l="Ages">' + fmtRange(r.age_min, r.age_max) + "</td>" +
+    '<td class="num" data-l="BMI">' + fmtRange(r.bmi_min, r.bmi_max) + "</td>" +
+    '<td class="num" data-l="Dates"' + (dt.title ? ' title="' + esc(dt.title) + '"' : "") + ">" + esc(dt.main) + "</td>" +
+    '<td data-l="Stay">' + esc(fmtStay(r)) + "</td>" +
+    "<td>" + (r.link ? '<a class="go" href="' + esc(r.link) + '" target="_blank" rel="noopener">View →</a>' : "") + "</td></tr>";
+}
+function expandHTML(r){
+  const bits = [];
+  if(r.details) bits.push('<div><span class="xlabel">Involves</span>' + esc(r.details) + "</div>");
+  if(r.dates_raw && r.start_date == null)
+    bits.push('<div><span class="xlabel">Dates</span>' + esc(r.dates_raw) + "</div>");
+  if(r.screen_pay != null) bits.push('<div><span class="xlabel">Screening pay</span>' + money(r.screen_pay) + "</div>");
+  if(r.smoking) bits.push('<div><span class="xlabel">Smoking</span>' + esc(r.smoking) + "</div>");
+  if(r.study_name) bits.push('<div><span class="xlabel">Study name</span>' + esc(r.study_name) + "</div>");
+  if(!bits.length) bits.push('<div class="sub">No further details — use the study link.</div>');
+  return '<tr class="expand"><td colspan="9"><div class="xgrid">' + bits.join("") + "</div></td></tr>";
+}
+
+/* ---------- filtering + sorting ---------- */
+function visible(){
+  const q = $("q").value.trim().toLowerCase();
+  const st = $("fState").value, g = $("fGender").value;
+  const age = parseInt($("fAge").value, 10);
+  const pay = parseFloat($("fPay").value);
+  const nights = parseInt($("fNights").value, 10);
+  const showRemoved = $("fRemoved").checked;
+
+  let rows = all.filter(r => {
+    if(!showRemoved && r.removed_at) return false;
+    if(clinicSel.size && !clinicSel.has(r.company)) return false;
+    if(st && r.location_state !== st) return false;
+    if(g === "m" && r.gender === "Women only") return false;
+    if(g === "f" && r.gender === "Men only") return false;
+    if(!isNaN(age) && r.age_min != null && (age < r.age_min || age > (r.age_max ?? 100))) return false;
+    if(!isNaN(pay) && !((r.pay_max ?? r.pay) >= pay)) return false;
+    if(!isNaN(nights) && (r.overnights_max ?? r.overnights ?? 0) > nights) return false;
+    if(q){
+      const hay = [r.title, r.company, r.study_name, r.study_number, r.details,
+                   r.location_city, r.location_state].filter(Boolean).join(" ").toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const by = $("fSort").value;
+  const cmp = {
+    new:   (a,b) => (b.first_seen || "").localeCompare(a.first_seen || ""),
+    payhi: (a,b) => (b.pay_max ?? b.pay ?? -1) - (a.pay_max ?? a.pay ?? -1),
+    paylo: (a,b) => (a.pay ?? Infinity) - (b.pay ?? Infinity),
+    date:  (a,b) => (a.start_date || "9999").localeCompare(b.start_date || "9999"),
+    clinic:(a,b) => (a.company || "").localeCompare(b.company || "") ||
+                    (b.pay ?? 0) - (a.pay ?? 0),
+  }[by];
+  rows.sort((a,b) => (a.removed_at ? 1 : 0) - (b.removed_at ? 1 : 0) || cmp(a,b));
+  return rows;
+}
+
+function render(){
+  const rows = visible();
+  $("rows").innerHTML = rows.map(r => rowHTML(r, all.indexOf(r))).join("");
+  $("tbl").style.display = rows.length ? "" : "none";
+  $("status").style.display = rows.length ? "none" : "";
+  if(!rows.length) $("status").textContent = "No studies match your filters.";
+  const removed = rows.filter(r => r.removed_at).length;
+  $("count").style.display = "";
+  $("count").textContent = rows.length + " of " + all.length + " studies shown" +
+    (removed ? " (" + removed + " recently removed)" : "");
+}
+
+/* ---------- events ---------- */
+["q","fState","fGender","fAge","fPay","fNights","fSort","fRemoved"].forEach(id =>
+  $(id).addEventListener("input", render));
+$("clear").addEventListener("click", () => {
+  ["q","fAge","fPay","fNights"].forEach(id => $(id).value = "");
+  $("fState").value = ""; $("fGender").value = ""; $("fSort").value = "new";
+  $("fRemoved").checked = true;
+  clinicSel.clear();
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
+  render();
+});
+$("rows").addEventListener("click", e => {
+  if(e.target.closest("a")) return;                 // let the study link work
+  const tr = e.target.closest("tr.study");
+  if(!tr) return;
+  const open = tr.nextElementSibling;
+  if(open && open.classList.contains("expand")){ open.remove(); return; }
+  document.querySelectorAll("tr.expand").forEach(x => x.remove());
+  tr.insertAdjacentHTML("afterend", expandHTML(all[+tr.dataset.i]));
+});
+
+/* ---------- boot ---------- */
+(async function init(){
+  let rows;
+  try{
+    const rsp = await fetch(SUPABASE_URL + "/rest/v1/studies?select=" + COLS + "&limit=1000",
+      {headers:{apikey:SUPABASE_ANON, Authorization:"Bearer " + SUPABASE_ANON}});
+    if(!rsp.ok) throw new Error("HTTP " + rsp.status);
+    rows = await rsp.json();
+  }catch(err){
+    $("status").textContent = "Couldn't load studies (" + err.message + "). Please refresh.";
+    return;
+  }
+  all = rows;
+
+  // clinic chips + state options from the data itself
+  const clinics = [...new Set(rows.map(r => r.company).filter(Boolean))].sort();
+  $("clinicChips").innerHTML = clinics.map(c =>
+    '<button class="chip" data-c="' + esc(c) + '">' + esc(c) + "</button>").join("");
+  document.querySelectorAll(".chip").forEach(ch => ch.addEventListener("click", () => {
+    const c = ch.dataset.c;
+    if(clinicSel.has(c)){ clinicSel.delete(c); ch.classList.remove("on"); }
+    else { clinicSel.add(c); ch.classList.add("on"); }
+    render();
+  }));
+  const states = [...new Set(rows.map(r => r.location_state).filter(Boolean))].sort();
+  $("fState").innerHTML = '<option value="">All</option>' +
+    states.map(s => "<option>" + esc(s) + "</option>").join("");
+
+  const newest = rows.map(r => r.last_seen).filter(Boolean).sort().pop();
+  if(newest){
+    const d = new Date(newest);
+    $("lede").textContent = "Live board of paid clinical trials — updated " +
+      d.toLocaleDateString("en-US",{month:"short",day:"numeric"}) + ", " +
+      d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) +
+      ". Tap a row for details.";
+  }
+  render();
+})();
+</script>
 </body>
 </html>
