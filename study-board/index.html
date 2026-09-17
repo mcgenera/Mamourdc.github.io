@@ -104,9 +104,9 @@
       <a href="/"><span class="wordmark">Study Scoops<span class="dot">.</span></span></a>
       <span class="tag">Study Board</span>
     </div>
-    <nav class="navlinks">
-      <a href="/">Home</a>
-      <a href="/dashboard">Dashboard</a>
+    <nav class="navlinks" id="nav">
+      <a href="/">Home Page</a>
+      <a href="/login">Log in</a>
     </nav>
   </header>
 
@@ -160,9 +160,25 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = "https://hkizcacrvtnsclmfdbeg.supabase.co";
 const SUPABASE_ANON = "sb_publishable_Fb0FrukVBMo5cuTs4LKgzw_Q4VxISCr";
+
+/* ---------- nav: logged out = Home Page + Log in, logged in = Dashboard + Log out ---------- */
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+(async function nav(){
+  const { data: { session } } = await sbClient.auth.getSession();
+  if(!session) return;                       // keep the logged-out default
+  document.getElementById("nav").innerHTML =
+    '<a href="/dashboard">Dashboard</a><a href="#" id="logout">Log out</a>';
+  document.getElementById("logout").addEventListener("click", async e => {
+    e.preventDefault();
+    await sbClient.auth.signOut();
+    document.getElementById("nav").innerHTML =
+      '<a href="/">Home Page</a><a href="/login">Log in</a>';
+  });
+})();
 const NEW_WINDOW_H  = 72;   // hours a study counts as NEW
 
 const COLS = ["company","location_city","location_state","study_name","study_number",
