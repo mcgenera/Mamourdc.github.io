@@ -222,12 +222,12 @@ const genderLabel = g =>
   g === "Men and women" ? "Men & women" : (g || "—");
 const isNew = r => !r.removed_at && r.first_seen &&
   (Date.now() - new Date(r.first_seen).getTime()) < NEW_WINDOW_H * 3600e3;
-const newLabel = r => {
-  const d = new Date(r.first_seen);
-  return d.toDateString() === new Date().toDateString()
-    ? "new · " + d.toLocaleTimeString("en-US", {hour:"numeric", minute:"2-digit"})
-    : "new";
+const stamp = iso => {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {month:"short", day:"numeric"}) + ", " +
+         d.toLocaleTimeString("en-US", {hour:"numeric", minute:"2-digit"});
 };
+const newLabel = r => "new · " + stamp(r.first_seen);
 const esc = s => String(s).replace(/[&<>"']/g,
   c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -236,7 +236,7 @@ function rowHTML(r, i){
   const pay = fmtPay(r), dt = fmtDates(r);
   const numline = [r.study_number, r.cohort].filter(Boolean).join(" · ");
   const tags = [];
-  if(r.removed_at) tags.push('<span class="badge gone">removed</span>');
+  if(r.removed_at) tags.push('<span class="badge gone">removed · ' + stamp(r.removed_at) + "</span>");
   if(isNew(r)) tags.push('<span class="badge new">' + newLabel(r) + "</span>");
   if(r.status && !/enrolling/i.test(r.status)) tags.push('<span class="badge status">' + esc(r.status) + "</span>");
   if(r.ncb) tags.push('<span class="badge ncb">NCB ' + esc(r.ncb) + "</span>");
